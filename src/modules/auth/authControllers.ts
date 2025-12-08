@@ -6,25 +6,26 @@ const { register: registerUser, getUserByEmail } = authService;
 
 const register = async (req: Request, res: Response) => {
   try {
-    const { email, name, password, phone } = req.body as IUserCreatePayload;
+    const { email, name, password, phone } = (req.body ||
+      {}) as IUserCreatePayload;
     // For Missing data
     if (!email) {
-      return res.send(422).json({
+      return res.status(422).json({
         message: "email is required",
       });
     }
     if (!name) {
-      return res.send(422).json({
+      return res.status(422).json({
         message: "name is required",
       });
     }
     if (!password) {
-      return res.send(422).json({
+      return res.status(422).json({
         message: "password is required",
       });
     }
     if (!phone) {
-      return res.send(422).json({
+      return res.status(422).json({
         message: "phone is required",
       });
     }
@@ -33,19 +34,19 @@ const register = async (req: Request, res: Response) => {
       .split("")
       .every((item) => item === item.toLowerCase());
     if (!lowerCaseEmail) {
-      return res.send(400).json({
+      return res.status(400).json({
         message: "email should be lowercase",
       });
     }
     if (password.length < 6) {
-      return res.send(400).json({
+      return res.status(400).json({
         message: "password must be min 6 chat length",
       });
     }
     // check email is already exist or not
     const userExist = await getUserByEmail(email);
     if (userExist) {
-      return res.send(400).json({
+      return res.status(400).json({
         message: "email already registered",
       });
     }
@@ -59,17 +60,18 @@ const register = async (req: Request, res: Response) => {
     const user = await registerUser(payload);
     if (user) {
       const { password: _, ...rest } = user;
-      return res.send(201).json({
+      return res.status(201).json({
         message: "Registration success",
         data: rest,
       });
     }
-    return res.send(500).json({
+    console.log(user)
+    return res.status(500).json({
       message: "Registration failed",
       data: null,
     });
   } catch (error: any) {
-    res.send(500).json({
+    res.status(500).json({
       message: error.message || "Internal server error",
       data: null,
     });

@@ -34,12 +34,13 @@ const getUserByEmail = async (email: string): Promise<IUser | null> => {
 
 const register = async (data: IUserCreatePayload): Promise<IUser | null> => {
   const { email, name, password, phone } = data;
-  const hashedPassword = bcryptjs.hashSync(password, config.hash_salt);
+  const salt = await bcryptjs.genSalt(Number(config.hash_salt));
+  const hashedPassword = bcryptjs.hashSync(password, salt);
   try {
     const result = await db.pool.query(
       `
         INSERT INTO users(name, email, password, phone)
-        VALUES($1, $2, $3, $4)
+        VALUES($1, $2, $3, $4) RETURNING *
         `,
       [name, email, hashedPassword, phone]
     );
