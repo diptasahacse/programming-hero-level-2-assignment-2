@@ -7,6 +7,7 @@ dotenv.config({
 const config = {
   port: process.env.PORT!,
   database_url: process.env.DATABASE_URL!,
+  hash_salt: process.env.HASH_SALT || 15,
 };
 
 export default config;
