@@ -18,17 +18,17 @@ const pool = new Pool({
         )
         `);
   //   // Vehicles
-  //   await pool.query(`
-  //     CREATE TABLE IF NOT EXIST vehicles(
-  //         id SERIAL PRIMARY KEY,
-  //         vehicle_name VARCHAR(100) NOT NULL,
-  //         type VARCHAR(20) NOT NULL,
-  //         registration_number VARCHAR(100) NOT NULL,
-  //         daily_rent_price NUMERIC(10, 2) NOT NULL CHECK (daily_rent_price > 0),
-  //         availability_status VARCHAR(20) NOT NULL DEFAULT 'available',
-  //         created_at TIMESTAMP DEFAULT NOW(),
-  //         updated_at TIMESTAMP DEFAULT NOW(),
-  //     )`);
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS vehicles(
+          id SERIAL PRIMARY KEY,
+          vehicle_name VARCHAR(100) NOT NULL,
+          type VARCHAR(20) NOT NULL,
+          registration_number VARCHAR(100) NOT NULL UNIQUE,
+          daily_rent_price NUMERIC(10, 2) NOT NULL CHECK (daily_rent_price >= 0),
+          availability_status VARCHAR(20) NOT NULL DEFAULT 'available',
+          created_at TIMESTAMP DEFAULT NOW(),
+          updated_at TIMESTAMP DEFAULT NOW()
+      )`);
 
   //   // Bookings
   //   await pool.query(`
