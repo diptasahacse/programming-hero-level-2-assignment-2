@@ -1,6 +1,6 @@
 import app from "./app";
 import config from "./config";
-import authRoutes from "./modules/auth/userRoutes";
+import authRoutes from "./modules/auth/authRoutes";
 
 app.use("/api/v1/auth/", authRoutes);
 

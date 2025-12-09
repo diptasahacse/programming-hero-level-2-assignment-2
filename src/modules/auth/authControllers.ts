@@ -1,8 +1,8 @@
 import { Request, Response } from "express";
-import { IUserCreatePayload } from "./authInterface";
+import { IUserCreatePayload, IUserSignInPayload } from "./authInterface";
 import authService from "./authServices";
 
-const { register: registerUser, getUserByEmail } = authService;
+const { register: registerUser, getUserByEmail, signin: login } = authService;
 
 const register = async (req: Request, res: Response) => {
   try {
@@ -65,7 +65,7 @@ const register = async (req: Request, res: Response) => {
         data: rest,
       });
     }
-    console.log(user)
+
     return res.status(500).json({
       message: "Registration failed",
       data: null,
@@ -78,7 +78,54 @@ const register = async (req: Request, res: Response) => {
   }
 };
 
+const signin = async (req: Request, res: Response) => {
+  try {
+    const { email, password } = (req.body || {}) as IUserSignInPayload;
+    // Validation
+    if (!email) {
+      return res.status(422).json({
+        message: "email is required",
+      });
+    }
+    if (!password) {
+      return res.status(422).json({
+        message: "password is required",
+      });
+    }
+
+    const user = await getUserByEmail(email);
+    if (!user) {
+      return res.status(404).json({
+        message: "email or password are incorrect",
+      });
+    }
+
+    const result = await login(
+      {
+        email,
+        password,
+      },
+      user
+    );
+    if (!result) {
+      return res.status(404).json({
+        message: "email or password are incorrect",
+      });
+    }
+    res.status(200).json({
+      success: true,
+      message: "Login successful",
+      data: result,
+    });
+  } catch (error: any) {
+    res.status(500).json({
+      message: error.message || "Internal server error",
+    });
+  }
+};
+
 const authController = {
   register,
+  signin
 };
 export default authController;

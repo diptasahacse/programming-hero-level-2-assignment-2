@@ -1,9 +1,13 @@
-import { IUserCreatePayload } from "./authInterface";
+import {
+  IUserCreatePayload,
+  IUserSigninPayload,
+  IUserSigninResponse,
+} from "./authInterface";
 import db from "../../db";
 import bcryptjs from "bcryptjs";
 import config from "../../config";
 import { IUser } from "../users/userInterface";
-
+import jwt from "jsonwebtoken";
 const getUserById = async (id: number) => {
   try {
     const result = await db.pool.query(
@@ -49,8 +53,55 @@ const register = async (data: IUserCreatePayload): Promise<IUser | null> => {
     throw new Error(error.message || "Internal server error");
   }
 };
+
+const signin = async (
+  data: IUserSigninPayload,
+  user: IUser
+): Promise<IUserSigninResponse | null> => {
+  const { email, password } = data;
+  const {
+    password: hashPassword,
+    email: userEmail,
+    id,
+    role,
+    name,
+    phone,
+  } = user;
+
+  try {
+    //  Check password
+    const compare = await bcryptjs.compare(password, hashPassword);
+    if (!compare) {
+      return null;
+    }
+
+    const payload = {
+      email: userEmail,
+      id: id,
+      role: role,
+    };
+
+    const token = jwt.sign(payload, config.jwt_secret, {
+      expiresIn: "2 days",
+    });
+
+    return {
+      token: token,
+      user: {
+        email,
+        id,
+        name,
+        phone,
+        role,
+      },
+    };
+  } catch (error: any) {
+    throw new Error(error.message || "Internal server error");
+  }
+};
 const authService = {
   register,
+  signin,
   getUserById,
   getUserByEmail,
 };
