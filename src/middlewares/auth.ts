@@ -1,9 +1,10 @@
 import { NextFunction, Request, Response } from "express";
 import jwt, { JwtPayload } from "jsonwebtoken";
 import config from "../config";
-
+import userService from "../modules/users/userServices";
+const { getUserByEmail } = userService;
 export const auth = (...roles: string[]) => {
-  return (req: Request, res: Response, next: NextFunction) => {
+  return async (req: Request, res: Response, next: NextFunction) => {
     try {
       const { authorization } = req.headers;
 
@@ -18,6 +19,14 @@ export const auth = (...roles: string[]) => {
 
       const authorized = roles.includes(decode.role);
       if (!authorized) {
+        return res.status(403).json({
+          message: "Unauthorized",
+          success: false,
+        });
+      }
+
+      const exist = await getUserByEmail(decode.email);
+      if (!exist) {
         return res.status(403).json({
           message: "Unauthorized",
           success: false,

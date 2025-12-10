@@ -29,27 +29,16 @@ const getAllUsers = async (req: Request, res: Response) => {
 const userById = async (req: Request, res: Response) => {
   try {
     const { id } = req.params || {};
-    const bodyUser: JwtPayload = (req.user || {});
-
-
-    if (!bodyUser) {
-      return res.status(403).json({
-        message: "Unauthorized",
-        success: false,
-      });
-    }
-
+    const bodyUser: JwtPayload = req.user || {};
+    const user = (await getUserById(Number(id))) as IUser | null;
     if (bodyUser.role !== "admin") {
-      const user = await getUserByEmail(bodyUser.email);
-      if (!user) {
+      if (user && user.email !== bodyUser.email) {
         return res.status(403).json({
           message: "Unauthorized",
           success: false,
         });
       }
     }
-
-    const user = (await getUserById(Number(id))) as IUser | undefined;
 
     if (!user) {
       return res.status(404).json({
