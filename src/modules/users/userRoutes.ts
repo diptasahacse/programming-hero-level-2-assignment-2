@@ -4,8 +4,9 @@ import { auth } from "../../middlewares/auth";
 
 const router = Router();
 
-const { getAllUsers } = userControllers;
+const { getAllUsers, userById } = userControllers;
 router.get("/", auth("admin"), getAllUsers);
+router.get("/:id", auth("admin", "customer"), userById);
 
 const userRoutes = router;
 export default userRoutes;
