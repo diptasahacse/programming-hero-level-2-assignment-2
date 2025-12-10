@@ -17,7 +17,7 @@ const pool = new Pool({
         updated_at TIMESTAMP DEFAULT NOW()
         )
         `);
-  //   // Vehicles
+    // Vehicles
     await pool.query(`
       CREATE TABLE IF NOT EXISTS vehicles(
           id SERIAL PRIMARY KEY,
