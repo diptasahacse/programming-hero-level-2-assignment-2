@@ -4,10 +4,12 @@ import config from "./config";
 import authRoutes from "./modules/auth/authRoutes";
 import userRoutes from "./modules/users/userRoutes";
 import vehicleRoutes from "./modules/vehicles/vehicleRoutes";
+import bookingRoutes from "./modules/bookings/bookingRoutes";
 
 app.use("/api/v1/auth/", authRoutes);
 app.use("/api/v1/vehicles/", vehicleRoutes);
 app.use("/api/v1/users/", userRoutes);
+app.use("/api/v1/bookings/", bookingRoutes);
 app.use((req: Request, res: Response) => {
   res.status(404).json({
     message: "Route not found.."

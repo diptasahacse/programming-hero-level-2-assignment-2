@@ -24,24 +24,25 @@ const pool = new Pool({
           vehicle_name VARCHAR(100) NOT NULL,
           type VARCHAR(20) NOT NULL,
           registration_number VARCHAR(100) NOT NULL UNIQUE,
-          daily_rent_price NUMERIC(10, 2) NOT NULL CHECK (daily_rent_price >= 0),
+          daily_rent_price NUMERIC NOT NULL CHECK (daily_rent_price >= 0),
           availability_status VARCHAR(20) NOT NULL DEFAULT 'available',
           created_at TIMESTAMP DEFAULT NOW(),
           updated_at TIMESTAMP DEFAULT NOW()
       )`);
 
-  //   // Bookings
-  //   await pool.query(`
-  //         CREATE TABLE IF NOT EXIST bookings(
-  //             id SERIAL PRIMARY KEY,
-  //             customer_id INT NOT NULL REFERENCE users(id) CASCADE DELETE,
-  //             vehicle_id INT NOT NULL REFERENCE vehicles(id) CASCADE DELETE,
-  //             rent_start_date TIMESTAMP NOT NULL,
-  //             rent_end_date TIMESTAMP NOT NULL CHECK (rent_start_date < rent_end_date),
-  //             total_price NUMERIC(10, 2) NOT NULL CHECK (total_price > 0),
-  //             created_at TIMESTAMP DEFAULT NOW(),
-  //             updated_at TIMESTAMP DEFAULT NOW(),
-  //         )`);
+    // Bookings
+    await pool.query(`
+          CREATE TABLE IF NOT EXISTS bookings(
+              id SERIAL PRIMARY KEY,
+              customer_id INT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+              vehicle_id INT NOT NULL REFERENCES vehicles(id) ON DELETE CASCADE,
+              rent_start_date DATE NOT NULL,
+              rent_end_date DATE NOT NULL CHECK (rent_start_date < rent_end_date),
+              total_price NUMERIC NOT NULL CHECK (total_price >= 0),
+              status VARCHAR(20) NOT NULL,
+              created_at TIMESTAMP DEFAULT NOW(),
+              updated_at TIMESTAMP DEFAULT NOW()
+          )`);
 };
 
 export default {
