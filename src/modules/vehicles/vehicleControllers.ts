@@ -154,7 +154,7 @@ const getVehicleById = async (req: Request, res: Response) => {
       });
     }
 
-    const { created_at, update_at, ...rest } = vehicle;
+    const { created_at, updated_at, ...rest } = vehicle;
 
     res.status(200).json({
       success: true,
@@ -264,11 +264,11 @@ const updateVehicleById = async (req: Request, res: Response) => {
       return res.status(500).json({
         success: true,
         message: "vehicle not updated",
-        data: result,
+        data: null,
       });
     }
 
-    const { created_at, update_at, ...rest } = result;
+    const { created_at, updated_at, ...rest } = result;
 
     res.status(200).json({
       success: true,

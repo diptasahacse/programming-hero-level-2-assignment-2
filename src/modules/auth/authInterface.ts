@@ -1,4 +1,7 @@
-export type userRole = "customer" | "admin";
+export const userRole = {
+  CUSTOMER: "customer",
+  ADMIN: "admin",
+} as const;
 
 export interface IUserCreatePayload {
   name: string;
@@ -23,6 +26,6 @@ export interface IUserSigninResponse {
     name: string;
     email: string;
     phone: string;
-    role: userRole;
+    role: typeof userRole[keyof typeof userRole];
   };
 }

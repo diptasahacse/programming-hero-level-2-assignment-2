@@ -16,7 +16,7 @@ export interface IVehicle {
   daily_rent_price: number;
   availability_status: (typeof VehicleStatus)[keyof typeof VehicleStatus];
   created_at: string;
-  update_at: string;
+  updated_at: string;
 }
 
 export interface IVehiclePayload {

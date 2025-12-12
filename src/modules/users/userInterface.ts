@@ -6,7 +6,13 @@ export interface IUser {
   email: string;
   password: string;
   phone: string;
-  role: userRole;
+  role: (typeof userRole)[keyof typeof userRole];
   created_at: string;
   updated_at: string;
+}
+export interface IUserUpdatePayload {
+  name?: string;
+  email?: string;
+  phone?: string;
+  role?: (typeof userRole)[keyof typeof userRole];
 }
