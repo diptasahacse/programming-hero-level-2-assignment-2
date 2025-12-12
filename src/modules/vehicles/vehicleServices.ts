@@ -124,11 +124,33 @@ const update = async (item: IVehicle, data: IVehicleUpdateBody) => {
     throw new Error(error.message || "Internal server error");
   }
 };
+
+const deleteVehicle = async (id: number) => {
+  try {
+    const result = await db.pool.query(
+      `
+      DELETE FROM vehicles
+      WHERE id = $1
+      `,
+      [id]
+    );
+
+    if ((result.rowCount || 0) > 0) {
+      return true;
+    }
+
+    return false;
+  } catch (error: any) {
+    throw new Error(error.message || "Internal server error");
+  }
+};
+
 const vehicleService = {
   create,
   getByRegistrationNumber,
   getVehicles,
   getById,
   update,
+  deleteVehicle,
 };
 export default vehicleService;

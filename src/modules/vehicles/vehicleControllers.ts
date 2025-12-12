@@ -14,6 +14,7 @@ const {
   getVehicles,
   getById,
   update,
+  deleteVehicle,
 } = vehicleService;
 
 const create = async (req: Request, res: Response) => {
@@ -127,7 +128,10 @@ const get = async (req: Request, res: Response) => {
     });
     res.status(200).json({
       success: true,
-      message: "vehicles retrieved successfully",
+      message:
+        vehicles.length > 0
+          ? "vehicles retrieved successfully"
+          : "No vehicles found",
       data: vehicles,
     });
   } catch (error: any) {
@@ -264,7 +268,7 @@ const updateVehicleById = async (req: Request, res: Response) => {
       });
     }
 
-    const {created_at, update_at, ...rest} = result
+    const { created_at, update_at, ...rest } = result;
 
     res.status(200).json({
       success: true,
@@ -279,10 +283,43 @@ const updateVehicleById = async (req: Request, res: Response) => {
   }
 };
 
+const deleteVehicleById = async (req: Request, res: Response) => {
+  try {
+    const { vehicleId } = req.params || {};
+    const vehicle = (await getById(Number(vehicleId))) as IVehicle | null;
+
+    if (!vehicle) {
+      return res.status(404).json({
+        success: false,
+        message: "vehicle not found",
+      });
+    }
+
+    const result = await deleteVehicle(vehicle.id);
+    if (!result) {
+      return res.status(500).json({
+        success: true,
+        message: "Vehicle not deleted",
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      message: "Vehicle deleted successfully",
+    });
+  } catch (error: any) {
+    res.status(500).json({
+      message: error.message || "Internal server error",
+      success: false,
+    });
+  }
+};
+
 const vehicleController = {
   create,
   get,
   getVehicleById,
   updateVehicleById,
+  deleteVehicleById,
 };
 export default vehicleController;
