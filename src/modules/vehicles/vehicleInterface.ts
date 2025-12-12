@@ -24,7 +24,7 @@ export interface IVehiclePayload {
   type: (typeof VehicleType)[keyof typeof VehicleType];
   registration_number: string;
   daily_rent_price: number;
-  availability_status:  (typeof VehicleStatus)[keyof typeof VehicleStatus];
+  availability_status: (typeof VehicleStatus)[keyof typeof VehicleStatus];
 }
 
 export interface IVehicleResponse {
@@ -34,4 +34,12 @@ export interface IVehicleResponse {
   registration_number: string;
   daily_rent_price: number;
   availability_status: (typeof VehicleStatus)[keyof typeof VehicleStatus];
+}
+
+export interface IVehicleUpdateBody {
+  vehicle_name?: string;
+  type?: (typeof VehicleType)[keyof typeof VehicleType];
+  registration_number?: string;
+  daily_rent_price?: number;
+  availability_status?: (typeof VehicleStatus)[keyof typeof VehicleStatus];
 }

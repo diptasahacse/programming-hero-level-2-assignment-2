@@ -4,8 +4,11 @@ import { auth } from "../../middlewares/auth";
 
 const router = Router();
 
-const { create } = vehicleController;
+const { create,get, getVehicleById,updateVehicleById } = vehicleController;
 router.post("/", auth("admin"), create);
+router.get("/", get);
+router.get("/:vehicleId", getVehicleById);
+router.put("/:vehicleId", updateVehicleById);
 
 const vehicleRoutes = router;
 

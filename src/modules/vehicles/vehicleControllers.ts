@@ -1,12 +1,20 @@
 import { Request, Response } from "express";
 import {
+  IVehicle,
   IVehiclePayload,
+  IVehicleUpdateBody,
   VehicleStatus,
   VehicleType,
 } from "./vehicleInterface";
 import vehicleService from "./vehicleServices";
 
-const { create: createVehicle, getByRegistrationNumber } = vehicleService;
+const {
+  create: createVehicle,
+  getByRegistrationNumber,
+  getVehicles,
+  getById,
+  update,
+} = vehicleService;
 
 const create = async (req: Request, res: Response) => {
   try {
@@ -105,7 +113,176 @@ const create = async (req: Request, res: Response) => {
   }
 };
 
+const get = async (req: Request, res: Response) => {
+  try {
+    const vehicles = ((await getVehicles()) as IVehicle[]).map((item) => {
+      return {
+        id: item.id,
+        availability_status: item.availability_status,
+        daily_rent_price: item.daily_rent_price,
+        registration_number: item.registration_number,
+        type: item.type,
+        vehicle_name: item.vehicle_name,
+      };
+    });
+    res.status(200).json({
+      success: true,
+      message: "vehicles retrieved successfully",
+      data: vehicles,
+    });
+  } catch (error: any) {
+    res.status(500).json({
+      message: error.message || "Internal server error",
+      success: false,
+    });
+  }
+};
+
+const getVehicleById = async (req: Request, res: Response) => {
+  try {
+    const { vehicleId } = req.params || {};
+    const vehicle = (await getById(Number(vehicleId))) as IVehicle | null;
+
+    if (!vehicle) {
+      return res.status(404).json({
+        success: false,
+        message: "vehicle not found",
+      });
+    }
+
+    const { created_at, update_at, ...rest } = vehicle;
+
+    res.status(200).json({
+      success: true,
+      message: "vehicle retrieved successfully",
+      data: rest,
+    });
+  } catch (error: any) {
+    res.status(500).json({
+      message: error.message || "Internal server error",
+      success: false,
+    });
+  }
+};
+
+const updateVehicleById = async (req: Request, res: Response) => {
+  try {
+    const { vehicleId } = req.params || {};
+    const vehicle = (await getById(Number(vehicleId))) as IVehicle | null;
+
+    if (!vehicle) {
+      return res.status(404).json({
+        success: false,
+        message: "vehicle not found",
+      });
+    }
+    const {
+      availability_status,
+      daily_rent_price,
+      registration_number,
+      type,
+      vehicle_name,
+    } = (req.body || {}) as IVehicleUpdateBody;
+
+    if (
+      typeof availability_status === "undefined" &&
+      typeof daily_rent_price === "undefined" &&
+      typeof registration_number === "undefined" &&
+      typeof type === "undefined" &&
+      typeof vehicle_name === "undefined"
+    ) {
+      return res.status(422).json({
+        success: false,
+        message: "fields are missing..",
+      });
+    }
+
+    if (type && !Object.values(VehicleType).includes(type)) {
+      return res.status(422).json({
+        success: false,
+        message: `Invalid type. allowed types are ${Object.values(
+          VehicleType
+        ).join(",")}`,
+      });
+    }
+
+    if (typeof daily_rent_price !== "undefined") {
+      if (isNaN(Number(daily_rent_price))) {
+        return res.status(422).json({
+          success: false,
+          message: `Invalid daily_rent_price. it should be positive number`,
+        });
+      }
+
+      if (Number(daily_rent_price) < 0) {
+        return res.status(422).json({
+          success: false,
+          message: `Invalid daily_rent_price. it should be positive number`,
+        });
+      }
+    }
+
+    if (
+      availability_status &&
+      !Object.values(VehicleStatus).includes(availability_status)
+    ) {
+      return res.status(422).json({
+        success: false,
+        message: `Invalid availability_status. allowed types are ${Object.values(
+          VehicleStatus
+        ).join(",")}`,
+      });
+    }
+
+    if (
+      typeof registration_number !== "undefined" &&
+      vehicle.registration_number !== registration_number
+    ) {
+      const exist = await getByRegistrationNumber(registration_number);
+      if (exist) {
+        return res.status(422).json({
+          success: false,
+          message: `registration_number already used..`,
+        });
+      }
+    }
+    const payload: IVehicleUpdateBody = {
+      availability_status,
+      daily_rent_price,
+      registration_number,
+      type,
+      vehicle_name,
+    };
+
+    const result = (await update(vehicle, payload)) as IVehicle | null;
+
+    if (!result) {
+      return res.status(500).json({
+        success: true,
+        message: "vehicle not updated",
+        data: result,
+      });
+    }
+
+    const {created_at, update_at, ...rest} = result
+
+    res.status(200).json({
+      success: true,
+      message: "vehicle updated successfully",
+      data: rest,
+    });
+  } catch (error: any) {
+    res.status(500).json({
+      message: error.message || "Internal server error",
+      success: false,
+    });
+  }
+};
+
 const vehicleController = {
   create,
+  get,
+  getVehicleById,
+  updateVehicleById,
 };
 export default vehicleController;
