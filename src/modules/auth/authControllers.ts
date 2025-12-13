@@ -1,6 +1,7 @@
 import { Request, Response } from "express";
 import { IUserCreatePayload, IUserSignInPayload } from "./authInterface";
 import authService from "./authServices";
+import { sendResponse } from "../../helpers/sendResponse";
 
 const { register: registerUser, getUserByEmail, signin: login } = authService;
 
@@ -10,25 +11,25 @@ const register = async (req: Request, res: Response) => {
       {}) as IUserCreatePayload;
     // For Missing data
     if (!email) {
-      return res.status(422).json({
+      return sendResponse(res, 400, {
         message: "email is required",
         success: false,
       });
     }
     if (!name) {
-      return res.status(422).json({
+      return sendResponse(res, 400, {
         message: "name is required",
         success: false,
       });
     }
     if (!password) {
-      return res.status(422).json({
+      return sendResponse(res, 400, {
         message: "password is required",
         success: false,
       });
     }
     if (!phone) {
-      return res.status(422).json({
+      return sendResponse(res, 400, {
         message: "phone is required",
         success: false,
       });
@@ -38,13 +39,13 @@ const register = async (req: Request, res: Response) => {
       .split("")
       .every((item) => item === item.toLowerCase());
     if (!lowerCaseEmail) {
-      return res.status(400).json({
+      return sendResponse(res, 400, {
         message: "email should be lowercase",
         success: false,
       });
     }
     if (password.length < 6) {
-      return res.status(400).json({
+      return sendResponse(res, 400, {
         message: "password must be min 6 chat length",
         success: false,
       });
@@ -52,7 +53,7 @@ const register = async (req: Request, res: Response) => {
     // check email is already exist or not
     const userExist = await getUserByEmail(email);
     if (userExist) {
-      return res.status(400).json({
+      return sendResponse(res, 400, {
         message: "email already registered",
         success: false,
       });
@@ -67,23 +68,22 @@ const register = async (req: Request, res: Response) => {
     const user = await registerUser(payload);
     if (user) {
       const { password: _, created_at, updated_at, ...rest } = user;
-      return res.status(201).json({
+      return sendResponse(res, 201, {
         success: true,
-        message: "Registration success",
+        message: "User registered successfully",
         data: rest,
       });
     }
 
-    return res.status(500).json({
+    return sendResponse(res, 500, {
       success: false,
       message: "Registration failed",
-      data: null,
     });
   } catch (error: any) {
-    res.status(500).json({
+    return sendResponse(res, 500, {
       success: false,
       message: error.message || "Internal server error",
-      data: null,
+      errors: error,
     });
   }
 };
@@ -93,13 +93,14 @@ const signin = async (req: Request, res: Response) => {
     const { email, password } = (req.body || {}) as IUserSignInPayload;
     // Validation
     if (!email) {
-      return res.status(422).json({
+      return sendResponse(res, 400, {
         message: "email is required",
         success: false,
       });
+      
     }
     if (!password) {
-      return res.status(422).json({
+      return sendResponse(res, 400, {
         message: "password is required",
         success: false,
       });
@@ -107,7 +108,7 @@ const signin = async (req: Request, res: Response) => {
 
     const user = await getUserByEmail(email);
     if (!user) {
-      return res.status(404).json({
+      return sendResponse(res, 404, {
         message: "email or password are incorrect",
         success: false,
       });
@@ -121,20 +122,21 @@ const signin = async (req: Request, res: Response) => {
       user
     );
     if (!result) {
-      return res.status(404).json({
+      return sendResponse(res, 404, {
         message: "email or password are incorrect",
         success: false,
       });
     }
-    res.status(200).json({
+    sendResponse(res, 200, {
       success: true,
       message: "Login successful",
       data: result,
     });
   } catch (error: any) {
-    res.status(500).json({
+    return sendResponse(res, 500, {
       message: error.message || "Internal server error",
       success: false,
+      errors: error,
     });
   }
 };

@@ -3,6 +3,7 @@ import { Request, Response } from "express";
 import userService from "./userServices";
 import { IUser, IUserUpdatePayload } from "./userInterface";
 import { userRole } from "../auth/authInterface";
+import { sendResponse } from "../../helpers/sendResponse";
 const { getUsers, getUserById, getUserByEmail, update } = userService;
 const getAllUsers = async (req: Request, res: Response) => {
   try {
@@ -15,15 +16,17 @@ const getAllUsers = async (req: Request, res: Response) => {
         role: item.role,
       };
     });
-    res.status(200).json({
+    sendResponse(res, 200, {
       success: true,
-      message: "Users retrieved successfully",
+      message:
+        users.length > 0 ? "Users retrieved successfully" : "No users found",
       data: users,
     });
   } catch (error: any) {
-    res.status(500).json({
+    sendResponse(res, 500, {
       message: error.message || "Internal server error",
       success: false,
+      errors: error,
     });
   }
 };
@@ -34,7 +37,7 @@ const userById = async (req: Request, res: Response) => {
     const user = (await getUserById(Number(userId))) as IUser | null;
     if (bodyUser.role !== "admin") {
       if (user && user.email !== bodyUser.email) {
-        return res.status(403).json({
+        return sendResponse(res, 403, {
           message: "Unauthorized",
           success: false,
         });
@@ -42,23 +45,25 @@ const userById = async (req: Request, res: Response) => {
     }
 
     if (!user) {
-      return res.status(404).json({
+      return sendResponse(res, 404, {
         success: false,
         message: "User not found",
+        data: null,
       });
     }
 
     const { password, created_at, updated_at, ...rest } = user;
 
-    res.status(200).json({
+    sendResponse(res, 200, {
       success: true,
       message: "Users retrieved successfully",
       data: rest,
     });
   } catch (error: any) {
-    res.status(500).json({
+    sendResponse(res, 500, {
       message: error.message || "Internal server error",
       success: false,
+      errors: error,
     });
   }
 };
@@ -71,17 +76,18 @@ const updateUserById = async (req: Request, res: Response) => {
     const user = (await getUserById(Number(userId))) as IUser | null;
 
     if (!user) {
-      return res.status(404).json({
+      return sendResponse(res, 404, {
         success: false,
-        message: "user not found",
+        message: "User not found",
+        data: null,
       });
     }
 
     // Customer can only update this own account except role
     if (bodyUser.role !== userRole.ADMIN && user.email !== bodyUser.email) {
-      return res.status(403).json({
+      return sendResponse(res, 403, {
         success: false,
-        message: "Unauthorized",
+        message: "Unauthorized. You can not update this user",
       });
     }
 
@@ -93,14 +99,14 @@ const updateUserById = async (req: Request, res: Response) => {
       typeof phone === "undefined" &&
       typeof role === "undefined"
     ) {
-      return res.status(422).json({
+      return sendResponse(res, 400, {
         success: false,
         message: "fields are missing..",
       });
     }
 
     if (role && !Object.values(userRole).includes(role)) {
-      return res.status(422).json({
+      return sendResponse(res, 400, {
         success: false,
         message: `Invalid role. allowed roles are ${Object.values(
           userRole
@@ -111,18 +117,17 @@ const updateUserById = async (req: Request, res: Response) => {
     // Customer can not update role
     if (bodyUser.role !== userRole.ADMIN && user.email === bodyUser.email) {
       if (role === userRole.ADMIN) {
-        return res.status(403).json({
+        return sendResponse(res, 403, {
           success: false,
           message: "As a customer you can not change your role to admin.",
         });
       }
     }
 
-
     if (typeof email !== "undefined" && user.email !== email) {
       const exist = await getUserByEmail(email);
       if (exist) {
-        return res.status(422).json({
+        return sendResponse(res, 400, {
           success: false,
           message: `email already used..`,
         });
@@ -138,24 +143,25 @@ const updateUserById = async (req: Request, res: Response) => {
     const result = (await update(user, payload)) as IUser | null;
 
     if (!result) {
-      return res.status(500).json({
-        success: true,
-        message: "user not updated",
+      return sendResponse(res, 500, {
+        message: "User not updated",
+        success: false,
         data: null,
       });
     }
 
     const { created_at, updated_at, password, ...rest } = result;
 
-    res.status(200).json({
+    sendResponse(res, 200, {
       success: true,
-      message: "user updated successfully",
+      message: "User updated successfully",
       data: rest,
     });
   } catch (error: any) {
-    res.status(500).json({
+    sendResponse(res, 500, {
       message: error.message || "Internal server error",
       success: false,
+      errors: error,
     });
   }
 };

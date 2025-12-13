@@ -7,6 +7,7 @@ import {
   VehicleType,
 } from "./vehicleInterface";
 import vehicleService from "./vehicleServices";
+import { sendResponse } from "../../helpers/sendResponse";
 
 const {
   create: createVehicle,
@@ -28,27 +29,27 @@ const create = async (req: Request, res: Response) => {
     } = (req.body || {}) as IVehiclePayload;
     // Validation
     if (!registration_number) {
-      return res.status(422).json({
+      return sendResponse(res, 400, {
         message: "registration_number is required",
         success: false,
       });
     }
     const exist = await getByRegistrationNumber(registration_number);
     if (exist) {
-      return res.status(422).json({
+      return sendResponse(res, 400, {
         message: "registration_number is already register",
         success: false,
       });
     }
 
     if (!availability_status) {
-      return res.status(422).json({
+      return sendResponse(res, 400, {
         message: "availability_status is required",
         success: false,
       });
     }
     if (!Object.values(VehicleStatus).includes(availability_status)) {
-      return res.status(422).json({
+      return sendResponse(res, 400, {
         message: `availability_status must be from ${Object.values(
           VehicleStatus
         ).join(", ")}`,
@@ -56,33 +57,33 @@ const create = async (req: Request, res: Response) => {
       });
     }
     if (typeof Number(daily_rent_price) !== "number") {
-      return res.status(422).json({
+      return sendResponse(res, 400, {
         message: "daily_rent_price is required",
         success: false,
       });
     }
     if (Number(daily_rent_price) < 0) {
-      return res.status(422).json({
+      return sendResponse(res, 400, {
         message: "daily_rent_price must be a positive number",
         success: false,
       });
     }
 
     if (!type) {
-      return res.status(422).json({
+      return sendResponse(res, 400, {
         message: "type is required",
         success: false,
       });
     }
 
     if (!Object.values(VehicleType).includes(type)) {
-      return res.status(422).json({
+      return sendResponse(res, 400, {
         message: `type must be from ${Object.values(VehicleType).join(", ")}`,
         success: false,
       });
     }
     if (!vehicle_name) {
-      return res.status(422).json({
+      return sendResponse(res, 400, {
         message: "vehicle_name is required",
         success: false,
       });
@@ -96,20 +97,22 @@ const create = async (req: Request, res: Response) => {
       vehicle_name,
     });
     if (!result) {
-      return res.status(500).json({
+      return sendResponse(res, 500, {
         message: "Something went wrong. vehicle is not created",
         success: false,
       });
     }
-    res.status(200).json({
+    const { created_at, updated_at, ...rest } = result;
+    sendResponse(res, 200, {
       success: true,
-      message: "Create successfully",
-      data: result,
+      message: "Vehicle created successfully",
+      data: rest,
     });
   } catch (error: any) {
-    res.status(500).json({
+    return sendResponse(res, 500, {
       message: error.message || "Internal server error",
       success: false,
+      errors: error,
     });
   }
 };
@@ -126,18 +129,19 @@ const get = async (req: Request, res: Response) => {
         vehicle_name: item.vehicle_name,
       };
     });
-    res.status(200).json({
+    sendResponse(res, 200, {
       success: true,
       message:
         vehicles.length > 0
-          ? "vehicles retrieved successfully"
+          ? "Vehicles retrieved successfully"
           : "No vehicles found",
       data: vehicles,
     });
   } catch (error: any) {
-    res.status(500).json({
+    return sendResponse(res, 500, {
       message: error.message || "Internal server error",
       success: false,
+      errors: error,
     });
   }
 };
@@ -148,23 +152,25 @@ const getVehicleById = async (req: Request, res: Response) => {
     const vehicle = (await getById(Number(vehicleId))) as IVehicle | null;
 
     if (!vehicle) {
-      return res.status(404).json({
+      return sendResponse(res, 404, {
         success: false,
-        message: "vehicle not found",
+        message: "Vehicle not found",
+        data: null,
       });
     }
 
     const { created_at, updated_at, ...rest } = vehicle;
 
-    res.status(200).json({
+    sendResponse(res, 200, {
       success: true,
-      message: "vehicle retrieved successfully",
+      message: "Vehicle retrieved successfully",
       data: rest,
     });
   } catch (error: any) {
-    res.status(500).json({
+    sendResponse(res, 500, {
       message: error.message || "Internal server error",
       success: false,
+      errors: error,
     });
   }
 };
@@ -175,9 +181,10 @@ const updateVehicleById = async (req: Request, res: Response) => {
     const vehicle = (await getById(Number(vehicleId))) as IVehicle | null;
 
     if (!vehicle) {
-      return res.status(404).json({
+      return sendResponse(res, 404, {
         success: false,
-        message: "vehicle not found",
+        message: "Vehicle not found",
+        data: null,
       });
     }
     const {
@@ -195,14 +202,14 @@ const updateVehicleById = async (req: Request, res: Response) => {
       typeof type === "undefined" &&
       typeof vehicle_name === "undefined"
     ) {
-      return res.status(422).json({
+      return sendResponse(res, 400, {
         success: false,
         message: "fields are missing..",
       });
     }
 
     if (type && !Object.values(VehicleType).includes(type)) {
-      return res.status(422).json({
+      return sendResponse(res, 400, {
         success: false,
         message: `Invalid type. allowed types are ${Object.values(
           VehicleType
@@ -212,14 +219,14 @@ const updateVehicleById = async (req: Request, res: Response) => {
 
     if (typeof daily_rent_price !== "undefined") {
       if (isNaN(Number(daily_rent_price))) {
-        return res.status(422).json({
+        return sendResponse(res, 400, {
           success: false,
           message: `Invalid daily_rent_price. it should be positive number`,
         });
       }
 
       if (Number(daily_rent_price) < 0) {
-        return res.status(422).json({
+        return sendResponse(res, 400, {
           success: false,
           message: `Invalid daily_rent_price. it should be positive number`,
         });
@@ -230,11 +237,11 @@ const updateVehicleById = async (req: Request, res: Response) => {
       availability_status &&
       !Object.values(VehicleStatus).includes(availability_status)
     ) {
-      return res.status(422).json({
-        success: false,
+      return sendResponse(res, 400, {
         message: `Invalid availability_status. allowed types are ${Object.values(
           VehicleStatus
         ).join(",")}`,
+        success: false,
       });
     }
 
@@ -244,7 +251,7 @@ const updateVehicleById = async (req: Request, res: Response) => {
     ) {
       const exist = await getByRegistrationNumber(registration_number);
       if (exist) {
-        return res.status(422).json({
+        return sendResponse(res, 400, {
           success: false,
           message: `registration_number already used..`,
         });
@@ -261,24 +268,25 @@ const updateVehicleById = async (req: Request, res: Response) => {
     const result = (await update(vehicle, payload)) as IVehicle | null;
 
     if (!result) {
-      return res.status(500).json({
-        success: true,
+      return sendResponse(res, 500, {
         message: "vehicle not updated",
+        success: true,
         data: null,
       });
     }
 
     const { created_at, updated_at, ...rest } = result;
 
-    res.status(200).json({
+    sendResponse(res, 200, {
       success: true,
-      message: "vehicle updated successfully",
+      message: "Vehicle updated successfully",
       data: rest,
     });
   } catch (error: any) {
-    res.status(500).json({
+    sendResponse(res, 500, {
       message: error.message || "Internal server error",
       success: false,
+      errors: error,
     });
   }
 };
@@ -289,34 +297,36 @@ const deleteVehicleById = async (req: Request, res: Response) => {
     const vehicle = (await getById(Number(vehicleId))) as IVehicle | null;
 
     if (!vehicle) {
-      return res.status(404).json({
+      return sendResponse(res, 404, {
         success: false,
-        message: "vehicle not found",
+        message: "Vehicle not found",
+        data: null,
       });
     }
     if (vehicle.availability_status === VehicleStatus.BOOKED) {
-      return res.status(422).json({
+      return sendResponse(res, 400, {
         success: false,
-        message: "status with booked vehicle can not be delete",
+        message: "Status with booked vehicle can not be delete",
       });
     }
 
     const result = await deleteVehicle(vehicle.id);
     if (!result) {
-      return res.status(500).json({
+      return sendResponse(res, 500, {
         success: true,
         message: "Vehicle not deleted",
       });
     }
 
-    res.status(200).json({
+    sendResponse(res, 200, {
       success: true,
       message: "Vehicle deleted successfully",
     });
   } catch (error: any) {
-    res.status(500).json({
+    sendResponse(res, 500, {
       message: error.message || "Internal server error",
       success: false,
+      errors: error,
     });
   }
 };

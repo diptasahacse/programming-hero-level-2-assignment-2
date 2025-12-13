@@ -3,7 +3,6 @@ import bookingService from "./bookingServices";
 import {
   BookingStatus,
   IBookingCreatePayload,
-  IBookingGet,
   IBookingResponse,
   IBookingUpdateResponse,
 } from "./bookingInterface";
@@ -13,6 +12,7 @@ import { IVehicle } from "../vehicles/vehicleInterface";
 import { JwtPayload } from "jsonwebtoken";
 import { userRole } from "../auth/authInterface";
 import { IUser } from "../users/userInterface";
+import { sendResponse } from "../../helpers/sendResponse";
 
 const {
   create,
@@ -38,25 +38,25 @@ const createBooking = async (req: Request, res: Response) => {
 
     // Validation
     if (typeof customer_id === "undefined") {
-      return res.status(422).json({
+      return sendResponse(res, 400, {
         message: "customer_id is required",
         success: false,
       });
     }
     if (typeof rent_end_date === "undefined") {
-      return res.status(422).json({
+      return sendResponse(res, 400, {
         message: "rent_end_date is required",
         success: false,
       });
     }
     if (typeof rent_start_date === "undefined") {
-      return res.status(422).json({
+      return sendResponse(res, 400, {
         message: "rent_start_date is required",
         success: false,
       });
     }
     if (typeof vehicle_id === "undefined") {
-      return res.status(422).json({
+      return sendResponse(res, 400, {
         message: "vehicle_id is required",
         success: false,
       });
@@ -65,19 +65,19 @@ const createBooking = async (req: Request, res: Response) => {
     //  Customer exist
     const user = (await getUserById(Number(customer_id))) as IUser | null;
     if (!user) {
-      return res.status(404).json({
+      return sendResponse(res, 404, {
         message: "user not found",
         success: false,
       });
     }
     if (user.role === userRole.ADMIN) {
-      return res.status(422).json({
+      return sendResponse(res, 400, {
         message: "admin type user can not book for him or any admin.",
         success: false,
       });
     }
     if (reqUser.role !== userRole.ADMIN && user.email !== reqUser.email) {
-      return res.status(403).json({
+      return sendResponse(res, 403, {
         message: "unauthorized",
         success: false,
       });
@@ -85,14 +85,14 @@ const createBooking = async (req: Request, res: Response) => {
 
     // Date validation
     if (!validDate(rent_start_date)) {
-      return res.status(422).json({
+      return sendResponse(res, 400, {
         message: "invalid rent_start_date value",
         success: false,
       });
     }
 
     if (!validDate(rent_end_date)) {
-      return res.status(422).json({
+      return sendResponse(res, 400, {
         message: "invalid rent_end_date value",
         success: false,
       });
@@ -103,7 +103,7 @@ const createBooking = async (req: Request, res: Response) => {
         new Date(getFormattedDate(rent_start_date)).getTime()) /
       86400000;
     if (duration <= 0) {
-      return res.status(422).json({
+      return sendResponse(res, 400, {
         message:
           "rent_end_date value must be greater than rent_start_date value",
         success: false,
@@ -113,15 +113,15 @@ const createBooking = async (req: Request, res: Response) => {
     //  Vehicle validate
     const vehicle = (await getById(Number(vehicle_id))) as IVehicle | null;
     if (!vehicle) {
-      return res.status(404).json({
-        message: "vehicle not found",
+      return sendResponse(res, 404, {
+        message: "Vehicle not found",
         success: false,
       });
     }
 
     if (vehicle?.availability_status === "booked") {
-      return res.status(422).json({
-        message: "vehicle already booked",
+      return sendResponse(res, 400, {
+        message: "Vehicle already booked",
         success: false,
       });
     }
@@ -138,7 +138,7 @@ const createBooking = async (req: Request, res: Response) => {
       vehicle?.daily_rent_price as number
     )) as any | null;
     if (!result) {
-      return res.status(500).json({
+      return sendResponse(res, 500, {
         message: "Something went wrong. booking is not created",
         success: false,
       });
@@ -148,7 +148,7 @@ const createBooking = async (req: Request, res: Response) => {
       availability_status: "booked",
     });
     if (!updateResult) {
-      return res.status(500).json({
+      return sendResponse(res, 500, {
         message: "Something went wrong. vehicle is not updated",
         success: false,
       });
@@ -168,15 +168,16 @@ const createBooking = async (req: Request, res: Response) => {
       },
     };
 
-    res.status(200).json({
+    sendResponse(res, 200, {
       success: true,
       message: "Booking Create successfully",
       data: response,
     });
   } catch (error: any) {
-    res.status(500).json({
+    sendResponse(res, 500, {
       message: error.message || "Internal server error",
       success: false,
+      errors: error,
     });
   }
 };
@@ -207,7 +208,7 @@ const get = async (req: Request, res: Response) => {
         },
       };
     });
-    res.status(200).json({
+    sendResponse(res, 200, {
       success: true,
       message:
         bookings.length > 0
@@ -216,9 +217,10 @@ const get = async (req: Request, res: Response) => {
       data: bookings,
     });
   } catch (error: any) {
-    res.status(500).json({
+    sendResponse(res, 500, {
       message: error.message || "Internal server error",
       success: false,
+      errors: error,
     });
   }
 };
@@ -232,7 +234,7 @@ const updateById = async (req: Request, res: Response) => {
     )) as IBookingResponse | null;
 
     if (!booking) {
-      return res.status(404).json({
+      return sendResponse(res, 404, {
         success: false,
         message: "booking not found",
       });
@@ -241,7 +243,7 @@ const updateById = async (req: Request, res: Response) => {
       booking.status === BookingStatus.CANCELLED ||
       booking.status === BookingStatus.RETURNED
     ) {
-      return res.status(400).json({
+      return sendResponse(res, 400, {
         success: false,
         message: "Booking already cancelled or returned",
       });
@@ -252,7 +254,7 @@ const updateById = async (req: Request, res: Response) => {
     };
 
     if (typeof status === "undefined") {
-      return res.status(422).json({
+      return sendResponse(res, 400, {
         success: false,
         message: "status is required",
       });
@@ -263,7 +265,7 @@ const updateById = async (req: Request, res: Response) => {
         status as "active" | "returned" | "cancelled"
       )
     ) {
-      return res.status(422).json({
+      return sendResponse(res, 400, {
         success: false,
         message: `invalid status. allowed are ${Object.values(
           BookingStatus
@@ -275,14 +277,14 @@ const updateById = async (req: Request, res: Response) => {
       status === BookingStatus.ACTIVE &&
       booking.status === BookingStatus.ACTIVE
     ) {
-      return res.status(422).json({
+      return sendResponse(res, 400, {
         success: false,
         message: `Already active`,
       });
     }
 
     if (status === BookingStatus.RETURNED && reqUser.role !== userRole.ADMIN) {
-      return res.status(403).json({
+      return sendResponse(res, 403, {
         success: false,
         message: `returned status is not allowed for customer`,
       });
@@ -292,13 +294,13 @@ const updateById = async (req: Request, res: Response) => {
       status === BookingStatus.CANCELLED &&
       reqUser.role !== userRole.CUSTOMER
     ) {
-      return res.status(403).json({
+      return sendResponse(res, 403, {
         success: false,
         message: `canceled status is not allowed for admin`,
       });
     }
     if (reqUser.role !== userRole.ADMIN && reqUser.id !== booking.customer_id) {
-      return res.status(403).json({
+      return sendResponse(res, 403, {
         success: false,
         message: `unauthorized`,
       });
@@ -307,7 +309,7 @@ const updateById = async (req: Request, res: Response) => {
       status === BookingStatus.CANCELLED &&
       reqUser.role !== userRole.CUSTOMER
     ) {
-      return res.status(403).json({
+      return sendResponse(res, 403, {
         success: false,
         message: `unauthorized`,
       });
@@ -317,8 +319,8 @@ const updateById = async (req: Request, res: Response) => {
         new Date(getFormattedDate(new Date().toISOString())).getTime()) /
       86400000;
     if (duration <= 0) {
-      return res.status(422).json({
-        message: "You can not cancel this booking at this time.",
+      return sendResponse(res, 400, {
+        message: "Sorry. You can not cancel this booking at this time.",
         success: false,
       });
     }
@@ -348,7 +350,7 @@ const updateById = async (req: Request, res: Response) => {
               availability_status: vehicleUpdateResult.availability_status,
             };
           }
-          return res.status(200).json({
+          return sendResponse(res, 200, {
             message:
               response.status === BookingStatus.RETURNED
                 ? "Booking marked as returned. Vehicle is now available"
@@ -357,32 +359,28 @@ const updateById = async (req: Request, res: Response) => {
             data: response
           });
         } else {
-          return res.status(500).json({
+          return sendResponse(res, 500, {
             message: "Not updated. Something went wrong.",
             success: false,
           });
         }
       } else {
-        return res.status(500).json({
+        return sendResponse(res, 500, {
           message: "Not updated. Something went wrong.",
           success: false,
         });
       }
     } else {
-      return res.status(500).json({
+      return sendResponse(res, 500, {
         message: "Not updated. Something went wrong.",
         success: false,
       });
     }
-
-    res.status(422).json({
-      message: "Working",
-      success: false,
-    });
   } catch (error: any) {
-    res.status(500).json({
+    return sendResponse(res, 500, {
       message: error.message || "Internal server error",
       success: false,
+      errors: error,
     });
   }
 };
