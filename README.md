@@ -1,3 +1,6 @@
+GitHub Repo: https://github.com/diptasahacse/programming-hero-level-2-assignment-2
+Live Deployment: https://assignment-2-seven-hazel.vercel.app
+
 # Vehicle Rental Management System API
 
 A comprehensive REST API for managing vehicle rentals, built with Node.js, Express, TypeScript, and PostgreSQL.
@@ -36,7 +39,8 @@ A comprehensive REST API for managing vehicle rentals, built with Node.js, Expre
   "name": "John Doe",
   "email": "john@example.com",
   "password": "password123",
-  "phone": "+1234567890"
+  "phone": "+1234567890",
+  "role": "customer"
 }
 ```
 - **Success Response** (201):
@@ -54,10 +58,12 @@ A comprehensive REST API for managing vehicle rentals, built with Node.js, Expre
 }
 ```
 - **Error Responses**:
-  - 400: Missing required fields
+  - 400: Missing required fields (name, email, password, phone, role)
+  - 400: Invalid role (must be admin or customer)
   - 400: Email already registered
   - 400: Password must be minimum 6 characters
   - 400: Email should be lowercase
+  - 500: Registration failed
 
 #### 2. User Login
 - **Endpoint**: `POST /api/v1/auth/signin`

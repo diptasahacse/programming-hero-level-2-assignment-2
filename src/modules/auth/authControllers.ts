@@ -1,5 +1,5 @@
 import { Request, Response } from "express";
-import { IUserCreatePayload, IUserSignInPayload } from "./authInterface";
+import { IUserCreatePayload, IUserSignInPayload, userRole } from "./authInterface";
 import authService from "./authServices";
 import { sendResponse } from "../../helpers/sendResponse";
 
@@ -7,7 +7,7 @@ const { register: registerUser, getUserByEmail, signin: login } = authService;
 
 const register = async (req: Request, res: Response) => {
   try {
-    const { email, name, password, phone } = (req.body ||
+    const { email, name, password, phone,role } = (req.body ||
       {}) as IUserCreatePayload;
     // For Missing data
     if (!email) {
@@ -31,6 +31,18 @@ const register = async (req: Request, res: Response) => {
     if (!phone) {
       return sendResponse(res, 400, {
         message: "phone is required",
+        success: false,
+      });
+    }
+    if (!role) {
+      return sendResponse(res, 400, {
+        message: "role is required",
+        success: false,
+      });
+    }
+    if (!Object.values(userRole).includes(role)) {
+      return sendResponse(res, 400, {
+        message: `Invalid role. allowed roles are ${Object.values(userRole).join(", ")}`,
         success: false,
       });
     }
@@ -64,6 +76,7 @@ const register = async (req: Request, res: Response) => {
       name,
       password,
       phone,
+      role
     };
     const user = await registerUser(payload);
     if (user) {

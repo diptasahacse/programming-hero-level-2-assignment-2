@@ -8,6 +8,7 @@ export interface IUserCreatePayload {
   email: string;
   password: string;
   phone: string;
+  role: typeof userRole[keyof typeof userRole];
 }
 export interface IUserSignInPayload {
   email: string;
