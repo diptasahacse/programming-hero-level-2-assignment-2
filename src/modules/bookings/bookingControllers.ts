@@ -5,6 +5,7 @@ import {
   IBookingCreatePayload,
   IBookingGet,
   IBookingResponse,
+  IBookingUpdateResponse,
 } from "./bookingInterface";
 import userService from "../users/userServices";
 import vehicleService from "../vehicles/vehicleServices";
@@ -13,8 +14,14 @@ import { JwtPayload } from "jsonwebtoken";
 import { userRole } from "../auth/authInterface";
 import { IUser } from "../users/userInterface";
 
-const { create, getBookings, getBookingsByCustomerId, getBookingById, update,getFormattedDate } =
-  bookingService;
+const {
+  create,
+  getBookings,
+  getBookingsByCustomerId,
+  getBookingById,
+  update,
+  getFormattedDate,
+} = bookingService;
 const { getUserById } = userService;
 const { getById, update: updateVehicle } = vehicleService;
 
@@ -277,6 +284,22 @@ const updateById = async (req: Request, res: Response) => {
     if (status === BookingStatus.RETURNED && reqUser.role !== userRole.ADMIN) {
       return res.status(403).json({
         success: false,
+        message: `returned status is not allowed for customer`,
+      });
+    }
+
+    if (
+      status === BookingStatus.CANCELLED &&
+      reqUser.role !== userRole.CUSTOMER
+    ) {
+      return res.status(403).json({
+        success: false,
+        message: `canceled status is not allowed for admin`,
+      });
+    }
+    if (reqUser.role !== userRole.ADMIN && reqUser.id !== booking.customer_id) {
+      return res.status(403).json({
+        success: false,
         message: `unauthorized`,
       });
     }
@@ -290,13 +313,12 @@ const updateById = async (req: Request, res: Response) => {
       });
     }
     const duration =
-      (new Date(getFormattedDate(new Date().toISOString())).getTime() -
-        new Date(getFormattedDate(booking.rent_start_date)).getTime()) /
+      (new Date(getFormattedDate(booking.rent_start_date)).getTime() -
+        new Date(getFormattedDate(new Date().toISOString())).getTime()) /
       86400000;
     if (duration <= 0) {
       return res.status(422).json({
-        message:
-          "You can not cancel this order. you can cancel your booking Cancel start date",
+        message: "You can not cancel this booking at this time.",
         success: false,
       });
     }
@@ -305,10 +327,56 @@ const updateById = async (req: Request, res: Response) => {
       booking.id,
       status as "active" | "cancelled" | "returned"
     );
-    console.log(result);
+    if (result) {
+      const vehicle = await getById(result.vehicle_id);
+      if (vehicle) {
+        const vehicleUpdateResult = await updateVehicle(vehicle, {
+          availability_status: "available",
+        });
+        if (vehicleUpdateResult) {
+          const response: IBookingUpdateResponse = {
+            id: result.id,
+            customer_id: result.customer_id,
+            vehicle_id: result.vehicle_id,
+            rent_start_date: result.rent_start_date,
+            rent_end_date: result.rent_end_date,
+            total_price: result.total_price,
+            status: result.status,
+          };
+          if (response.status === BookingStatus.RETURNED) {
+            response.vehicle = {
+              availability_status: vehicleUpdateResult.availability_status,
+            };
+          }
+          return res.status(200).json({
+            message:
+              response.status === BookingStatus.RETURNED
+                ? "Booking marked as returned. Vehicle is now available"
+                : "Booking cancelled successfully",
+            success: true,
+            data: response
+          });
+        } else {
+          return res.status(500).json({
+            message: "Not updated. Something went wrong.",
+            success: false,
+          });
+        }
+      } else {
+        return res.status(500).json({
+          message: "Not updated. Something went wrong.",
+          success: false,
+        });
+      }
+    } else {
+      return res.status(500).json({
+        message: "Not updated. Something went wrong.",
+        success: false,
+      });
+    }
+
     res.status(422).json({
-      message:
-        "Working",
+      message: "Working",
       success: false,
     });
   } catch (error: any) {
@@ -322,6 +390,6 @@ const updateById = async (req: Request, res: Response) => {
 const bookingController = {
   createBooking,
   get,
-  updateById
+  updateById,
 };
 export default bookingController;

@@ -41,3 +41,15 @@ export interface IBookingResponse {
     daily_rent_price: number;
   };
 }
+export interface IBookingUpdateResponse {
+  id: number;
+  customer_id: number;
+  vehicle_id: number;
+  rent_start_date: string;
+  rent_end_date: string;
+  total_price: number;
+  status: (typeof BookingStatus)[keyof typeof BookingStatus];
+  vehicle?: {
+    availability_status: string;
+  };
+}

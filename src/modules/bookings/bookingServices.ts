@@ -132,7 +132,8 @@ const update = async (
       `
       UPDATE bookings
         SET
-          status = $1
+          status = $1,
+          updated_at = NOW()
         WHERE id = $2 RETURNING *
       `,
       [status, id]
