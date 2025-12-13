@@ -1,5 +1,6 @@
-GitHub Repo: https://github.com/diptasahacse/programming-hero-level-2-assignment-2
-Live Deployment: https://assignment-2-seven-hazel.vercel.app
+-> GitHub Repo: https://github.com/diptasahacse/programming-hero-level-2-assignment-2
+
+-> Live Deployment: https://assignment-2-seven-hazel.vercel.app
 
 # Vehicle Rental Management System API
 
