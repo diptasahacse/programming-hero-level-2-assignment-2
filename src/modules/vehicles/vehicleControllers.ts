@@ -294,6 +294,12 @@ const deleteVehicleById = async (req: Request, res: Response) => {
         message: "vehicle not found",
       });
     }
+    if (vehicle.availability_status === VehicleStatus.BOOKED) {
+      return res.status(422).json({
+        success: false,
+        message: "status with booked vehicle can not be delete",
+      });
+    }
 
     const result = await deleteVehicle(vehicle.id);
     if (!result) {

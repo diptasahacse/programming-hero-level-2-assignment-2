@@ -74,9 +74,25 @@ const getBookings = async () => {
     throw new Error(error.message || "Internal server error");
   }
 };
-const getBookingsByCustomerId = async (id:number) => {
+const getBookingById = async (id: number) => {
   try {
-    const results = await db.pool.query(`
+    const results = await db.pool.query(
+      `
+      SELECT *
+      FROM bookings
+      WHERE id = $1
+      `,
+      [id]
+    );
+    return results.rows[0];
+  } catch (error: any) {
+    throw new Error(error.message || "Internal server error");
+  }
+};
+const getBookingsByCustomerId = async (id: number) => {
+  try {
+    const results = await db.pool.query(
+      `
       SELECT 
       b.id,
       b.customer_id, 
@@ -96,8 +112,31 @@ const getBookingsByCustomerId = async (id:number) => {
       JOIN vehicles AS v 
         ON b.vehicle_id = v.id
       WHERE b.customer_id = $1;
-      `, [id]);
+      `,
+      [id]
+    );
     return results.rows;
+  } catch (error: any) {
+    throw new Error(error.message || "Internal server error");
+  }
+};
+
+const update = async (
+  id: number,
+  status: (typeof BookingStatus)[keyof typeof BookingStatus]
+): Promise<any> => {
+  try {
+    const result = await db.pool.query(
+      `
+      UPDATE bookings
+        SET
+          status = $1
+        WHERE id = $2 RETURNING *
+      `,
+      [status, id]
+    );
+
+    return result.rows[0] ?? null;
   } catch (error: any) {
     throw new Error(error.message || "Internal server error");
   }
@@ -106,6 +145,8 @@ const getBookingsByCustomerId = async (id:number) => {
 const bookingService = {
   create,
   getBookings,
-  getBookingsByCustomerId
+  getBookingsByCustomerId,
+  getBookingById,
+  update
 };
 export default bookingService;

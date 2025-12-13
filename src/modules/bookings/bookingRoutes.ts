@@ -4,10 +4,11 @@ import { auth } from "../../middlewares/auth";
 
 const router = Router();
 
-const { createBooking, get } = bookingController;
+const { createBooking, get, updateById } = bookingController;
 router.post("/", auth("admin", "customer"), createBooking);
 
 router.get("/", auth("admin", "customer"), get);
+router.put("/:bookingId", auth("admin", "customer"), updateById);
 
 const bookingRoutes = router;
 

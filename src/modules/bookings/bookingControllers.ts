@@ -1,6 +1,7 @@
 import { Request, Response } from "express";
 import bookingService from "./bookingServices";
 import {
+  BookingStatus,
   IBookingCreatePayload,
   IBookingGet,
   IBookingResponse,
@@ -12,7 +13,8 @@ import { JwtPayload } from "jsonwebtoken";
 import { userRole } from "../auth/authInterface";
 import { IUser } from "../users/userInterface";
 
-const { create, getBookings, getBookingsByCustomerId } = bookingService;
+const { create, getBookings, getBookingsByCustomerId, getBookingById, update } =
+  bookingService;
 const { getUserById } = userService;
 const { getById, update: updateVehicle } = vehicleService;
 
@@ -20,6 +22,7 @@ const validDate = (date: string) => {
   return isNaN(new Date(date).getDate()) === false;
 };
 const getFormattedDate = (date: string) => {
+  console.log(new Date(date).toISOString())
   return new Date(date).toISOString().split("T")[0];
 };
 
@@ -61,6 +64,12 @@ const createBooking = async (req: Request, res: Response) => {
     if (!user) {
       return res.status(404).json({
         message: "user not found",
+        success: false,
+      });
+    }
+    if (user.role === userRole.ADMIN) {
+      return res.status(422).json({
+        message: "admin type user can not book for him or any admin.",
         success: false,
       });
     }
@@ -211,8 +220,112 @@ const get = async (req: Request, res: Response) => {
   }
 };
 
+const updateById = async (req: Request, res: Response) => {
+  try {
+    const reqUser = req.user as JwtPayload;
+    const { bookingId } = req.params || {};
+    const booking = (await getBookingById(
+      Number(bookingId)
+    )) as IBookingResponse | null;
+
+    if (!booking) {
+      return res.status(404).json({
+        success: false,
+        message: "booking not found",
+      });
+    }
+    if (
+      booking.status === BookingStatus.CANCELLED ||
+      booking.status === BookingStatus.RETURNED
+    ) {
+      return res.status(400).json({
+        success: false,
+        message: "Booking already cancelled or returned",
+      });
+    }
+
+    const { status } = (req.body || {}) as {
+      status?: string;
+    };
+
+    if (typeof status === "undefined") {
+      return res.status(422).json({
+        success: false,
+        message: "status is required",
+      });
+    }
+
+    if (
+      !Object.values(BookingStatus).includes(
+        status as "active" | "returned" | "cancelled"
+      )
+    ) {
+      return res.status(422).json({
+        success: false,
+        message: `invalid status. allowed are ${Object.values(
+          BookingStatus
+        ).join(", ")}`,
+      });
+    }
+
+    if (
+      status === BookingStatus.ACTIVE &&
+      booking.status === BookingStatus.ACTIVE
+    ) {
+      return res.status(422).json({
+        success: false,
+        message: `Already active`,
+      });
+    }
+
+    if (status === BookingStatus.RETURNED && reqUser.role !== userRole.ADMIN) {
+      return res.status(403).json({
+        success: false,
+        message: `unauthorized`,
+      });
+    }
+    if (
+      status === BookingStatus.CANCELLED &&
+      reqUser.role !== userRole.CUSTOMER
+    ) {
+      return res.status(403).json({
+        success: false,
+        message: `unauthorized`,
+      });
+    }
+    const duration =
+      (new Date(getFormattedDate(new Date().toISOString())).getTime() -
+        new Date(getFormattedDate(booking.rent_start_date)).getTime()) /
+      86400000;
+    if (duration <= 0) {
+      return res.status(422).json({
+        message:
+          "You can not cancel this order. you can cancel your booking Cancel start date",
+        success: false,
+      });
+    }
+
+    const result = await update(
+      booking.id,
+      status as "active" | "cancelled" | "returned"
+    );
+    console.log(result);
+    res.status(422).json({
+      message:
+        "Working",
+      success: false,
+    });
+  } catch (error: any) {
+    res.status(500).json({
+      message: error.message || "Internal server error",
+      success: false,
+    });
+  }
+};
+
 const bookingController = {
   createBooking,
   get,
+  updateById
 };
 export default bookingController;
