@@ -6,13 +6,14 @@ import userRoutes from "./modules/users/userRoutes";
 import vehicleRoutes from "./modules/vehicles/vehicleRoutes";
 import bookingRoutes from "./modules/bookings/bookingRoutes";
 
+app.get("/", (req: Request, res: Response) => {
+  res.status(200).json("Welcome to Car Rental Service");
+});
 app.use("/api/v1/auth/", authRoutes);
 app.use("/api/v1/vehicles/", vehicleRoutes);
 app.use("/api/v1/users/", userRoutes);
 app.use("/api/v1/bookings/", bookingRoutes);
-app.get("/", (req: Request, res: Response) => {
-  res.send("Welcome to Car Rental Service");
-});
+
 app.use((req: Request, res: Response) => {
   res.status(404).json({
     message: "Route not found.."
