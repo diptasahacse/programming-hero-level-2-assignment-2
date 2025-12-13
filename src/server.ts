@@ -10,7 +10,7 @@ app.use("/api/v1/auth/", authRoutes);
 app.use("/api/v1/vehicles/", vehicleRoutes);
 app.use("/api/v1/users/", userRoutes);
 app.use("/api/v1/bookings/", bookingRoutes);
-app.use("/", (req: Request, res: Response) => {
+app.get("/", (req: Request, res: Response) => {
   res.send("Welcome to Car Rental Service");
 });
 app.use((req: Request, res: Response) => {
