@@ -1,6 +1,10 @@
 import { Request, Response } from "express";
 import bookingService from "./bookingServices";
-import { IBookingCreatePayload } from "./bookingInterface";
+import {
+  IBookingCreatePayload,
+  IBookingGet,
+  IBookingResponse,
+} from "./bookingInterface";
 import userService from "../users/userServices";
 import vehicleService from "../vehicles/vehicleServices";
 import { IVehicle } from "../vehicles/vehicleInterface";
@@ -8,7 +12,7 @@ import { JwtPayload } from "jsonwebtoken";
 import { userRole } from "../auth/authInterface";
 import { IUser } from "../users/userInterface";
 
-const { create } = bookingService;
+const { create, getBookings, getBookingsByCustomerId } = bookingService;
 const { getUserById } = userService;
 const { getById, update: updateVehicle } = vehicleService;
 
@@ -117,7 +121,10 @@ const createBooking = async (req: Request, res: Response) => {
       vehicle_id,
     };
 
-    const result = await create(payload, vehicle?.daily_rent_price as number);
+    const result = (await create(
+      payload,
+      vehicle?.daily_rent_price as number
+    )) as any | null;
     if (!result) {
       return res.status(500).json({
         message: "Something went wrong. booking is not created",
@@ -135,10 +142,66 @@ const createBooking = async (req: Request, res: Response) => {
       });
     }
 
+    const response: IBookingResponse = {
+      customer_id: result.customer_id,
+      id: result.id,
+      rent_end_date: getFormattedDate(result.rent_end_date),
+      rent_start_date: getFormattedDate(result.rent_start_date),
+      status: result.status,
+      total_price: Number(result.total_price),
+      vehicle_id: result.vehicle_id,
+      vehicle: {
+        daily_rent_price: Number(result.daily_rent_price),
+        vehicle_name: result.vehicle_name,
+      },
+    };
+
     res.status(200).json({
       success: true,
       message: "Booking Create successfully",
-      data: result,
+      data: response,
+    });
+  } catch (error: any) {
+    res.status(500).json({
+      message: error.message || "Internal server error",
+      success: false,
+    });
+  }
+};
+
+const get = async (req: Request, res: Response) => {
+  try {
+    const reqUser = req.user as JwtPayload;
+    const customer = reqUser.role === userRole.CUSTOMER;
+
+    const bookings = (
+      customer ? await getBookingsByCustomerId(reqUser.id) : await getBookings()
+    ).map((item) => {
+      return {
+        id: item.id,
+        customer_id: item.customer_id,
+        vehicle_id: item.vehicle_id,
+        rent_start_date: item.rent_start_date,
+        rent_end_date: item.rent_end_date,
+        total_price: item.total_price,
+        status: item.status,
+        customer: {
+          name: item.name,
+          email: item.email,
+        },
+        vehicle: {
+          registration_number: item?.registration_number,
+          vehicle_name: item?.vehicle_name,
+        },
+      };
+    });
+    res.status(200).json({
+      success: true,
+      message:
+        bookings.length > 0
+          ? "bookings retrieved successfully"
+          : "No bookings found",
+      data: bookings,
     });
   } catch (error: any) {
     res.status(500).json({
@@ -150,5 +213,6 @@ const createBooking = async (req: Request, res: Response) => {
 
 const bookingController = {
   createBooking,
+  get,
 };
 export default bookingController;
