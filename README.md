@@ -167,6 +167,7 @@ A comprehensive REST API for managing vehicle rentals, built with Node.js, Expre
 ```
 - **Error Responses**:
   - 404: Vehicle not found
+  - 500: Internal server error
 
 #### 6. Update Vehicle
 - **Endpoint**: `PUT /api/v1/vehicles/:vehicleId`
@@ -194,6 +195,16 @@ A comprehensive REST API for managing vehicle rentals, built with Node.js, Expre
   }
 }
 ```
+- **Error Responses**:
+  - 401: Unauthenticated
+  - 403: Unauthorized (not admin)
+  - 404: Vehicle not found
+  - 400: Fields are missing
+  - 400: Invalid type (must be car, bike, van, SUV)
+  - 400: Invalid daily_rent_price (must be positive number)
+  - 400: Invalid availability_status (must be available or booked)
+  - 400: Registration number already used
+  - 500: Vehicle not updated
 
 #### 7. Delete Vehicle
 - **Endpoint**: `DELETE /api/v1/vehicles/:vehicleId`
@@ -206,6 +217,12 @@ A comprehensive REST API for managing vehicle rentals, built with Node.js, Expre
   "message": "Vehicle deleted successfully"
 }
 ```
+- **Error Responses**:
+  - 401: Unauthenticated
+  - 403: Unauthorized (not admin)
+  - 404: Vehicle not found
+  - 400: Booked vehicle cannot be deleted
+  - 500: Vehicle not deleted
 
 ### User Management APIs
 
@@ -238,7 +255,7 @@ A comprehensive REST API for managing vehicle rentals, built with Node.js, Expre
 ```json
 {
   "success": true,
-  "message": "User retrieved successfully",
+  "message": "Users retrieved successfully",
   "data": {
     "id": 1,
     "name": "John Doe",
@@ -248,6 +265,11 @@ A comprehensive REST API for managing vehicle rentals, built with Node.js, Expre
   }
 }
 ```
+- **Error Responses**:
+  - 401: Unauthenticated
+  - 403: Unauthorized (customer accessing other user's profile)
+  - 404: User not found
+  - 500: Internal server error
 
 #### 10. Update User
 - **Endpoint**: `PUT /api/v1/users/:userId`
@@ -274,10 +296,37 @@ A comprehensive REST API for managing vehicle rentals, built with Node.js, Expre
   }
 }
 ```
+- **Error Responses**:
+  - 401: Unauthenticated
+  - 403: Unauthorized (cannot update other user's profile)
+  - 404: User not found
+  - 400: Fields are missing
+  - 400: Invalid role (must be admin or customer)
+  - 403: Customer cannot change role to admin
+  - 400: Email already used
+  - 500: User not updated
+
+#### 11. Delete User
+- **Endpoint**: `DELETE /api/v1/users/:userId`
+- **Access**: Admin only
+- **Headers**: `Authorization: Bearer <token>`
+- **Success Response** (200):
+```json
+{
+  "success": true,
+  "message": "User deleted successfully"
+}
+```
+- **Error Responses**:
+  - 401: Unauthenticated
+  - 403: Unauthorized (not admin)
+  - 404: User not found
+  - 400: Admin cannot delete own account
+  - 400: User has active bookings (cannot be deleted)
 
 ### Booking APIs
 
-#### 11. Create Booking
+#### 12. Create Booking
 - **Endpoint**: `POST /api/v1/bookings/`
 - **Access**: Admin or Customer
 - **Headers**: `Authorization: Bearer <token>`
@@ -294,7 +343,7 @@ A comprehensive REST API for managing vehicle rentals, built with Node.js, Expre
 ```json
 {
   "success": true,
-  "message": "Booking created successfully",
+  "message": "Booking Create successfully",
   "data": {
     "id": 1,
     "customer_id": 1,
@@ -311,14 +360,19 @@ A comprehensive REST API for managing vehicle rentals, built with Node.js, Expre
 }
 ```
 - **Error Responses**:
-  - 400: Missing required fields
+  - 401: Unauthenticated
+  - 400: Missing required fields (customer_id, vehicle_id, rent_start_date, rent_end_date)
+  - 404: User not found
+  - 400: Admin type user cannot book for themselves or any admin
+  - 403: Customer can only book for themselves
   - 400: Invalid date format
   - 400: End date must be greater than start date
-  - 404: User or vehicle not found
+  - 404: Vehicle not found
   - 400: Vehicle already booked
-  - 403: Unauthorized (customer can only book for themselves)
+  - 500: Booking not created
+  - 500: Vehicle status not updated
 
-#### 12. Get All Bookings
+#### 13. Get All Bookings
 - **Endpoint**: `GET /api/v1/bookings/`
 - **Access**: Admin (all bookings) or Customer (own bookings)
 - **Headers**: `Authorization: Bearer <token>`
@@ -326,7 +380,7 @@ A comprehensive REST API for managing vehicle rentals, built with Node.js, Expre
 ```json
 {
   "success": true,
-  "message": "Bookings retrieved successfully",
+  "message": "bookings retrieved successfully",
   "data": [
     {
       "id": 1,
@@ -348,8 +402,11 @@ A comprehensive REST API for managing vehicle rentals, built with Node.js, Expre
   ]
 }
 ```
+- **Error Responses**:
+  - 401: Unauthenticated
+  - 500: Internal server error
 
-#### 13. Update Booking
+#### 14. Update Booking
 - **Endpoint**: `PUT /api/v1/bookings/:bookingId`
 - **Access**: Admin or Customer (own booking)
 - **Headers**: `Authorization: Bearer <token>`
@@ -363,7 +420,7 @@ A comprehensive REST API for managing vehicle rentals, built with Node.js, Expre
 ```json
 {
   "success": true,
-  "message": "Booking updated successfully",
+  "message": "Booking cancelled successfully",
   "data": {
     "id": 1,
     "customer_id": 1,
@@ -375,6 +432,18 @@ A comprehensive REST API for managing vehicle rentals, built with Node.js, Expre
   }
 }
 ```
+- **Error Responses**:
+  - 401: Unauthenticated
+  - 404: Booking not found
+  - 400: Booking already cancelled or returned
+  - 400: Status is required
+  - 400: Invalid status (must be active, cancelled, or returned)
+  - 400: Already active (when trying to set active status on active booking)
+  - 403: Only admin can set returned status
+  - 403: Only customer can set cancelled status
+  - 403: Customer can only update their own booking
+  - 400: Cannot cancel booking after start date
+  - 500: Booking not updated
 
 ## Data Models
 
