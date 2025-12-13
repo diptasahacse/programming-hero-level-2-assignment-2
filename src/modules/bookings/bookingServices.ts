@@ -1,16 +1,18 @@
 import db from "../../db";
 import { BookingStatus, IBookingCreatePayload } from "./bookingInterface";
-
+const getFormattedDate = (date: string) => {
+  return new Date(date).toISOString().split("T")[0];
+};
 const create = async (
   data: IBookingCreatePayload,
   dailyRentPrice: number
 ): Promise<any> => {
   const { customer_id, rent_end_date, rent_start_date, vehicle_id } = data;
-  const duration =
-    (new Date(rent_end_date).getTime() - new Date(rent_start_date).getTime()) /
-    86400000;
+   const duration =
+      (new Date(getFormattedDate(rent_end_date)).getTime() -
+        new Date(getFormattedDate(rent_start_date)).getTime()) /
+      86400000;
   const cost = dailyRentPrice * duration;
-
   try {
     const result = await db.pool.query(
       `
@@ -34,8 +36,8 @@ const create = async (
       `,
       [
         customer_id,
-        rent_end_date,
-        rent_start_date,
+        getFormattedDate(rent_end_date),
+        getFormattedDate(rent_start_date),
         vehicle_id,
         cost,
         BookingStatus.ACTIVE,
@@ -147,6 +149,7 @@ const bookingService = {
   getBookings,
   getBookingsByCustomerId,
   getBookingById,
-  update
+  update,
+  getFormattedDate
 };
 export default bookingService;

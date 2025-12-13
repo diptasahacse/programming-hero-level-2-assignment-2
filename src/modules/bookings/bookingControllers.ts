@@ -13,17 +13,13 @@ import { JwtPayload } from "jsonwebtoken";
 import { userRole } from "../auth/authInterface";
 import { IUser } from "../users/userInterface";
 
-const { create, getBookings, getBookingsByCustomerId, getBookingById, update } =
+const { create, getBookings, getBookingsByCustomerId, getBookingById, update,getFormattedDate } =
   bookingService;
 const { getUserById } = userService;
 const { getById, update: updateVehicle } = vehicleService;
 
 const validDate = (date: string) => {
   return isNaN(new Date(date).getDate()) === false;
-};
-const getFormattedDate = (date: string) => {
-  console.log(new Date(date).toISOString())
-  return new Date(date).toISOString().split("T")[0];
 };
 
 const createBooking = async (req: Request, res: Response) => {
