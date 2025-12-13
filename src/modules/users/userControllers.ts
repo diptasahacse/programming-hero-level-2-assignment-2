@@ -4,7 +4,11 @@ import userService from "./userServices";
 import { IUser, IUserUpdatePayload } from "./userInterface";
 import { userRole } from "../auth/authInterface";
 import { sendResponse } from "../../helpers/sendResponse";
-const { getUsers, getUserById, getUserByEmail, update } = userService;
+import bookingService from "../bookings/bookingServices";
+import { BookingStatus } from "../bookings/bookingInterface";
+const { getUsers, getUserById, getUserByEmail, update, deleteUser } =
+  userService;
+const { getBookingByStatusAndOwnerId } = bookingService;
 const getAllUsers = async (req: Request, res: Response) => {
   try {
     const users = ((await getUsers()) as IUser[]).map((item) => {
@@ -166,10 +170,71 @@ const updateUserById = async (req: Request, res: Response) => {
   }
 };
 
+const deleteUserById = async (req: Request, res: Response) => {
+  try {
+    const { userId } = req.params || {};
+    const user = (await getUserById(Number(userId))) as IUser | null;
+
+    const reqUser = req.user || ({} as JwtPayload);
+
+    if (!user) {
+      return sendResponse(res, 404, {
+        success: false,
+        message: "User not found",
+        data: null,
+      });
+    }
+
+    if (reqUser.role === userRole.ADMIN && reqUser.id === user.id) {
+      return sendResponse(res, 400, {
+        success: false,
+        message: "Admin user can not delete own account",
+        data: null,
+      });
+    }
+
+    const bookings = await getBookingByStatusAndOwnerId(
+      BookingStatus.ACTIVE,
+      user.id
+    );
+
+    if (bookings.length > 0) {
+      return sendResponse(res, 400, {
+        success: false,
+        message:
+          "User can not be delete. This user have some active bookings...",
+        data: null,
+      });
+    }
+
+    const deleted = await deleteUser(user.id);
+
+    if (!deleted) {
+      return sendResponse(res, 500, {
+        success: false,
+        message: "User not deleted",
+        data: null,
+      });
+    }
+
+    sendResponse(res, 200, {
+      success: true,
+      message: "User deleted successfully",
+    });
+  } catch (error: any) {
+    sendResponse(res, 500, {
+      message: error.message || "Internal server error",
+      success: false,
+      errors: error,
+    });
+  }
+};
+
 const userControllers = {
   getAllUsers,
   userById,
   updateUserById,
+  deleteUserById,
 };
 
 export default userControllers;

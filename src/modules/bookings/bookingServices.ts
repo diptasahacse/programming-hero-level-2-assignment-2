@@ -8,10 +8,10 @@ const create = async (
   dailyRentPrice: number
 ): Promise<any> => {
   const { customer_id, rent_end_date, rent_start_date, vehicle_id } = data;
-   const duration =
-      (new Date(getFormattedDate(rent_end_date)).getTime() -
-        new Date(getFormattedDate(rent_start_date)).getTime()) /
-      86400000;
+  const duration =
+    (new Date(getFormattedDate(rent_end_date)).getTime() -
+      new Date(getFormattedDate(rent_start_date)).getTime()) /
+    86400000;
   const cost = dailyRentPrice * duration;
   try {
     const result = await db.pool.query(
@@ -145,12 +145,32 @@ const update = async (
   }
 };
 
+const getBookingByStatusAndOwnerId = async (
+  status: (typeof BookingStatus)[keyof typeof BookingStatus],
+  customer_id: number
+) => {
+  try {
+    const results = await db.pool.query(
+      `
+      SELECT *
+      FROM bookings
+      WHERE customer_id = $1 AND status = $2
+      `,
+      [customer_id, status]
+    );
+    return results.rows ?? [];
+  } catch (error: any) {
+    throw new Error(error.message || "Internal server error");
+  }
+};
+
 const bookingService = {
   create,
   getBookings,
   getBookingsByCustomerId,
   getBookingById,
   update,
-  getFormattedDate
+  getFormattedDate,
+  getBookingByStatusAndOwnerId
 };
 export default bookingService;
